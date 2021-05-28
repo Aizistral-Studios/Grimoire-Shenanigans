@@ -30,9 +30,12 @@ public class GrimoireShenanigans implements Plugin<Project> {
 	public Project project;
 	public ExtraShenanigans extraShenanigans;
 
+	protected boolean enabled = false;
+
 	@Override
 	@SuppressWarnings({"unchecked", "rawtypes"})
 	public void apply(Project project) {
+		this.enabled = true;
 		this.project = project;
 		this.applyExternalPlugin("forge");
 		project.getExtensions().create("grimoire", GrimoireExtension.class, this);
@@ -141,7 +144,7 @@ public class GrimoireShenanigans implements Plugin<Project> {
 	}
 
 	public boolean areGrimoireShenanigansEnabled() {
-		return Boolean.parseBoolean(String.valueOf(this.project.getProperties().get("enableGrimoireShenanigans")));
+		return this.enabled;
 	}
 
 	public String getMixinRefmapName() {
