@@ -195,10 +195,14 @@ public class GrimoireShenanigans implements Plugin<Project> {
 			Jar jarTask = (Jar) this.project.getTasks().getByName("jar");
 
 			jarTask.from(mixinRefMap, action -> {
-				String destination = this.getMixinRefmapName().replace("$", "/");
+				String name = mixinRefMap.getName();
+				String destination = mixinRefMap.getName().replace("$", "/");
+
 				if (destination.contains("/")) {
-					destination = destination.substring(destination.lastIndexOf('/'), destination.length());
-					action.into(destination);
+					destination = destination.substring(0, destination.lastIndexOf('/'));
+					action.into(destination).eachFile(copy -> {
+						copy.setName(name.substring(name.lastIndexOf('$')+1, name.length()));
+					});
 				}
 			});
 			// Why do we need this one again?..
