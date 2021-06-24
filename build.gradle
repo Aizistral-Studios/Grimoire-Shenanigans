@@ -9,7 +9,7 @@ apply plugin: "maven"
 apply plugin: 'maven-publish'
 
 group = 'com.integral.grimoire'
-version = '1.0.2'
+version = '1.1.9'
 archivesBaseName = 'GrimoireShenanigans'
 
 targetCompatibility = sourceCompatibility = '1.8'
@@ -80,6 +80,9 @@ publishing {
 
             pom {
                 name = project.name
+                groupId = project.group
+                version = project.version
+                artifactId = project.name
                 description = 'Gradle plugin that simplifies workspace setup for Grimoire implementers'
                 url = 'https://github.com/Aizistral-Studios/Grimoire-Shenanigans'
 

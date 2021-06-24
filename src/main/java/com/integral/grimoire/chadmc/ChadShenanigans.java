@@ -1,4 +1,4 @@
-package com.integral.grimoire.fg12;
+package com.integral.grimoire.chadmc;
 
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
@@ -32,9 +32,9 @@ import net.minecraftforge.gradle.tasks.user.reobf.ReobfTask;
 import net.minecraftforge.gradle.user.patch.ForgeUserPlugin;
 import net.minecraftforge.gradle.user.patch.UserPatchBasePlugin;
 
-public class ExtraShenanigans_12 extends ExtraShenanigans {
+public class ChadShenanigans extends ExtraShenanigans {
 
-	public ExtraShenanigans_12(GrimoireShenanigans plugin) {
+	public ChadShenanigans(GrimoireShenanigans plugin) {
 		super(plugin);
 	}
 
@@ -69,6 +69,22 @@ public class ExtraShenanigans_12 extends ExtraShenanigans {
 		public void doTask() {
 			// NO-OP
 		}
+	}
+
+	@Override
+	public String getAnnotationProccessor() {
+		return "org.spongepowered:mixin:0.7.11-SNAPSHOT";
+	}
+
+	@Override
+	public boolean isChadMC() {
+		return true;
+	}
+
+	@Override
+	public void addSourceReplacements() {
+		ForgeUserPlugin forge = (ForgeUserPlugin) this.project.getPlugins().getPlugin("forge");
+		forge.getExtension().replace("@MIXIN_REFMAP@", this.plugin.getMixinRefmapName());
 	}
 
 }

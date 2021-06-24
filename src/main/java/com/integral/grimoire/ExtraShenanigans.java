@@ -16,6 +16,12 @@ public abstract class ExtraShenanigans {
 
 	public abstract Task copySrgsTask();
 
+	public abstract String getAnnotationProccessor();
+
+	public abstract boolean isChadMC();
+
 	public abstract void extraReobfMap(File mixinSrg);
+
+	public abstract void addSourceReplacements();
 
 }

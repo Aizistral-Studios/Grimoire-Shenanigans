@@ -1,4 +1,4 @@
-package com.integral.grimoire.fg23;
+package com.integral.grimoire.incelmc;
 
 import java.io.File;
 import java.lang.reflect.Method;
@@ -18,9 +18,9 @@ import net.minecraftforge.gradle.user.TaskSingleReobf;
 import net.minecraftforge.gradle.user.patch.UserPatchBasePlugin;
 import net.minecraftforge.gradle.user.patcherUser.forge.ForgePlugin;
 
-public class ExtraShenanigans_23 extends ExtraShenanigans {
+public class IncelShenanigans extends ExtraShenanigans {
 
-	public ExtraShenanigans_23(GrimoireShenanigans plugin) {
+	public IncelShenanigans(GrimoireShenanigans plugin) {
 		super(plugin);
 	}
 
@@ -57,6 +57,21 @@ public class ExtraShenanigans_23 extends ExtraShenanigans {
 		public void doTask() {
 			// NO-OP
 		}
+	}
+
+	@Override
+	public String getAnnotationProccessor() {
+		return "org.spongepowered:mixin:0.8.3-SNAPSHOT:processor";
+	}
+
+	@Override
+	public boolean isChadMC() {
+		return false;
+	}
+
+	@Override
+	public void addSourceReplacements() {
+		// NO-OP
 	}
 
 }
