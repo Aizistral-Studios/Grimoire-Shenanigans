@@ -193,8 +193,14 @@ public class GrimoireShenanigans implements Plugin<Project> {
 
 			// Make sure default .jar artifact will embed our glorious refmap we've been putting together
 			Jar jarTask = (Jar) this.project.getTasks().getByName("jar");
-			jarTask.from(mixinRefMap).into(this.getMixinRefmapName().replace("$", "/"));
 
+			jarTask.from(mixinRefMap, action -> {
+				String destination = this.getMixinRefmapName().replace("$", "/");
+				if (destination.contains("/")) {
+					destination = destination.substring(destination.lastIndexOf('/'), destination.length());
+					action.into(destination);
+				}
+			});
 			// Why do we need this one again?..
 			this.extraShenanigans.extraReobfMap(mixinSrg);
 
