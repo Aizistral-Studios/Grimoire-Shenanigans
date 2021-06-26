@@ -5,18 +5,21 @@ import java.lang.reflect.Method;
 
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.internal.plugins.DslObject;
+import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.Copy;
+import org.gradle.api.tasks.GroovySourceSet;
+import org.gradle.api.tasks.ScalaSourceSet;
+import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.compile.JavaCompile;
+import org.gradle.api.tasks.scala.ScalaCompile;
 
 import com.integral.grimoire.ExtraShenanigans;
 import com.integral.grimoire.GrimoireShenanigans;
 
-import net.minecraftforge.gradle.common.Constants;
-import net.minecraftforge.gradle.delayed.DelayedFile;
-import net.minecraftforge.gradle.tasks.user.reobf.ReobfTask;
-import net.minecraftforge.gradle.user.TaskSingleReobf;
-import net.minecraftforge.gradle.user.patch.UserPatchBasePlugin;
-import net.minecraftforge.gradle.user.patcherUser.forge.ForgePlugin;
+import net.minecraftforge.gradle.userdev.UserDevExtension;
+import net.minecraftforge.gradle.userdev.UserDevPlugin;
 
 public class IncelShenanigans extends ExtraShenanigans {
 
@@ -38,27 +41,6 @@ public class IncelShenanigans extends ExtraShenanigans {
 		//reobf.addSecondarySrgFile(mixinSrg);
 	}
 
-	// Custom Tasks
-
-	public static class CopySrgsTask extends Copy {
-		public CopySrgsTask() {
-			super();
-		}
-
-		public void init(ForgePlugin forgePlugin) {
-			this.from(forgePlugin.delayedFile(Constants.DIR_MCP_MAPPINGS + "/srgs/"));
-
-			this.include("**/*.srg");
-			this.into(this.getProject().getBuildDir().getName() + "/srgs");
-
-		}
-
-		@TaskAction
-		public void doTask() {
-			// NO-OP
-		}
-	}
-
 	@Override
 	public String getAnnotationProccessor() {
 		return "org.spongepowered:mixin:0.8.3-SNAPSHOT:processor";
@@ -71,7 +53,26 @@ public class IncelShenanigans extends ExtraShenanigans {
 
 	@Override
 	public void addSourceReplacements() {
-		// NO-OP
+		this.createSourceCopyTasks().replace("@MIXIN_REFMAP@", this.plugin.getMixinRefmapName());
+	}
+
+	private final SourceCopyTask createSourceCopyTasks() {
+		JavaPluginConvention javaConv = (JavaPluginConvention) this.project.getConvention().getPlugins().get("java");
+		SourceSet main = javaConv.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+
+		// do the special source moving...
+
+		File dir = new File(this.project.getBuildDir(), "sources/java");
+
+		SourceCopyTask task = this.plugin.makeTask("sourceCopyTask", SourceCopyTask.class);
+		task.setSource(main.getJava());
+		task.setOutput(dir);
+
+		JavaCompile compile = (JavaCompile) this.project.getTasks().getByName(main.getCompileJavaTaskName());
+		compile.dependsOn("sourceMainJava");
+		compile.setSource(dir);
+
+		return task;
 	}
 
 }
