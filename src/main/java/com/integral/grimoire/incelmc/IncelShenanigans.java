@@ -17,9 +17,7 @@ import org.gradle.api.tasks.scala.ScalaCompile;
 
 import com.integral.grimoire.ExtraShenanigans;
 import com.integral.grimoire.GrimoireShenanigans;
-
-import net.minecraftforge.gradle.userdev.UserDevExtension;
-import net.minecraftforge.gradle.userdev.UserDevPlugin;
+import net.minecraftforge.gradle.user.patcherUser.forge.ForgePlugin;
 
 public class IncelShenanigans extends ExtraShenanigans {
 
@@ -40,6 +38,7 @@ public class IncelShenanigans extends ExtraShenanigans {
 				throw new RuntimeException(ex);
 			}
 		}
+
 		//CopySrgsTask copyTask = this.plugin.makeTask("copySrgs", CopySrgsTask.class);
 		//copyTask.init((ForgePlugin) this.project.getPlugins().getPlugin("forge"));
 		//return copyTask;
@@ -54,7 +53,7 @@ public class IncelShenanigans extends ExtraShenanigans {
 
 	@Override
 	public String getAnnotationProccessor() {
-		return "org.spongepowered:mixin:0.8.3-SNAPSHOT:processor";
+		return "org.spongepowered:mixin:0.8.1-SNAPSHOT:processor";
 	}
 
 	@Override
@@ -64,7 +63,8 @@ public class IncelShenanigans extends ExtraShenanigans {
 
 	@Override
 	public void addSourceReplacements() {
-		this.createSourceCopyTasks().replace("@MIXIN_REFMAP@", this.plugin.getMixinRefmapName());
+		ForgePlugin forge = (ForgePlugin) this.project.getPlugins().getPlugin("net.minecraftforge.gradle.forge");
+		forge.getExtension().replace("@MIXIN_REFMAP@", this.plugin.getMixinRefmapName());
 	}
 
 	private final SourceCopyTask createSourceCopyTasks() {

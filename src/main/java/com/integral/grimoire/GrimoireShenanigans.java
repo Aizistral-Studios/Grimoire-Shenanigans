@@ -70,7 +70,7 @@ public class GrimoireShenanigans implements Plugin<Project> {
 				this.extraShenanigans = new ChadShenanigans(this);
 			} catch (Exception ex) {
 				try {
-					Class.forName("net.minecraftforge.gradle.userdev.UserDevPlugin");
+					Class.forName("net.minecraftforge.gradle.user.patcherUser.forge.ForgePlugin");
 					this.extraShenanigans = new IncelShenanigans(this);
 				} catch (Exception ex2) {
 					throw new RuntimeException("Could not locate any valid ForgeGradle version!", ex2);
@@ -222,19 +222,19 @@ public class GrimoireShenanigans implements Plugin<Project> {
 
 			// Why do we need this one again?..
 			this.extraShenanigans.extraReobfMap(mixinSrg);
-
-			// Automatically replace any @MIXIN_REFMAP@ tokens in project resources
-			ProcessResources processResources = (ProcessResources) this.project.getTasks().getByName("processResources");
-			Map<String, Object> propertyMap = new LinkedHashMap<String, Object>();
-			Map<String, String> tokenMap = new LinkedHashMap<String, String>();
-			tokenMap.put("MIXIN_REFMAP", this.getMixinRefmapName());
-			propertyMap.put("tokens", tokenMap);
-
-			processResources.filter(propertyMap, ReplaceTokens.class);
-
-			// Also in project sources
-			this.extraShenanigans.addSourceReplacements();
 		}
+
+		// Automatically replace any @MIXIN_REFMAP@ tokens in project resources
+		ProcessResources processResources = (ProcessResources) this.project.getTasks().getByName("processResources");
+		Map<String, Object> propertyMap = new LinkedHashMap<String, Object>();
+		Map<String, String> tokenMap = new LinkedHashMap<String, String>();
+		tokenMap.put("MIXIN_REFMAP", this.getMixinRefmapName());
+		propertyMap.put("tokens", tokenMap);
+
+		processResources.filter(propertyMap, ReplaceTokens.class);
+
+		// Also in project sources
+		this.extraShenanigans.addSourceReplacements();
 	}
 
 	private void addRule(List<AccessRule> rules, Rule rule, String pattern) {
