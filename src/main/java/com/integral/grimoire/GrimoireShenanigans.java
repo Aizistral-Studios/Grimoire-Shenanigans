@@ -170,9 +170,23 @@ public class GrimoireShenanigans implements Plugin<Project> {
 
 		if (this.extraShenanigans.isChadMC()) {
 			// Create directory and srg/refmap output files for Mixin annotation processor
-			this.project.file(this.project.getBuildDir().getName() + "/mixins").mkdirs();
-			File mixinSrg = this.project.file(this.project.getBuildDir().getName() + "/mixins/mixins." + this.project.getName() + ".srg");
-			File mixinRefMap = this.project.file(this.project.getBuildDir().getName() + "/mixins/" + this.getMixinRefmapName().replace("/", "$").replace(File.separator, "$"));
+			File mixinBuild = new File(this.project.getBuildDir(), "mixins");
+			mixinBuild.mkdirs();
+
+			File mixinSrg = new File(mixinBuild, "mixins." + this.project.getName() + ".srg");
+			File mixinRefMap = new File(mixinBuild, this.getMixinRefmapName().replace("/", "$").replace(File.separator, "$"));
+
+			try {
+				if (!mixinSrg.exists()) {
+					mixinSrg.createNewFile();
+				}
+
+				if (!mixinRefMap.exists()) {
+					mixinRefMap.createNewFile();
+				}
+			} catch (Exception ex) {
+				throw new RuntimeException(ex);
+			}
 
 			// We probably don't need this, but having it will allow to interact with these
 			// properties through buildscript. Probably. Why? Why not.
@@ -205,6 +219,7 @@ public class GrimoireShenanigans implements Plugin<Project> {
 					});
 				}
 			});
+
 			// Why do we need this one again?..
 			this.extraShenanigans.extraReobfMap(mixinSrg);
 

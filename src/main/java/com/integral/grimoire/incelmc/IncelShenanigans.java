@@ -29,6 +29,17 @@ public class IncelShenanigans extends ExtraShenanigans {
 
 	@Override
 	public Task copySrgsTask() {
+		File srgDir = new File(this.project.getBuildDir(), "createMcpToSrg");
+		File srg = new File(srgDir, "output.tsrg");
+
+		if (!srg.exists()) {
+			try {
+				srgDir.mkdirs();
+				srg.createNewFile();
+			} catch (Exception ex) {
+				throw new RuntimeException(ex);
+			}
+		}
 		//CopySrgsTask copyTask = this.plugin.makeTask("copySrgs", CopySrgsTask.class);
 		//copyTask.init((ForgePlugin) this.project.getPlugins().getPlugin("forge"));
 		//return copyTask;
