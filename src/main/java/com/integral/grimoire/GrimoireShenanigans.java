@@ -242,7 +242,7 @@ public class GrimoireShenanigans implements Plugin<Project> {
 	}
 
 	public String grimoireVersion() {
-		return this.project.hasProperty("grimoireVersion") ? this.project.getProperties().get("grimoireVersion").toString() : "+";
+		return this.project.hasProperty("grimoireVersion") ? this.project.getProperties().get("grimoireVersion").toString() : "[3.2.0,)";
 	}
 
 	public boolean areGrimoireShenanigansEnabled() {
