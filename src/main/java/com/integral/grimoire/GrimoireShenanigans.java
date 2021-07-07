@@ -1,6 +1,9 @@
 package com.integral.grimoire;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,13 +36,17 @@ import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.tooling.model.eclipse.EclipseExternalDependency;
 
 import com.integral.grimoire.chadmc.ChadShenanigans;
+import com.integral.grimoire.ide.GrimoireEclipse;
 import com.integral.grimoire.incelmc.IncelShenanigans;
 import com.integral.grimoire.tasks.ClearBuildTask;
 import com.integral.grimoire.tasks.ClearResourcesTask;
 
+import groovy.xml.MarkupBuilder;
+
 public class GrimoireShenanigans implements Plugin<Project> {
 	public Project project;
 	public ExtraShenanigans extraShenanigans;
+	public GrimoireExtension extension;
 	public Rule forbiddenRule;
 
 	protected boolean enabled = false;
@@ -51,7 +58,7 @@ public class GrimoireShenanigans implements Plugin<Project> {
 		this.project = project;
 		this.applyExternalPlugin("maven-publish");
 		this.applyExternalPlugin("eclipse");
-		project.getExtensions().create("grimoire", GrimoireExtension.class, this);
+		this.extension = project.getExtensions().create("grimoire", GrimoireExtension.class, this);
 
 		// Make sure to clear build cache before compiling/processing classes/resources.
 		// Required for proper inflation/token replacement when building
@@ -175,6 +182,7 @@ public class GrimoireShenanigans implements Plugin<Project> {
 
 			File mixinSrg = new File(mixinBuild, "mixins." + this.project.getName() + ".srg");
 			File mixinRefMap = new File(mixinBuild, this.getMixinRefmapName().replace("/", "$").replace(File.separator, "$"));
+			File reobfSrg = this.project.file(this.project.getBuildDir().getName() + "/srgs/mcp-srg.srg");
 
 			try {
 				if (!mixinSrg.exists()) {
@@ -199,11 +207,14 @@ public class GrimoireShenanigans implements Plugin<Project> {
 				compilerArgs.add("-Xlint:-processing");
 				compilerArgs.add("-AoutSrgFile=" + mixinSrg.getCanonicalPath());
 				compilerArgs.add("-AoutRefMapFile=" + mixinRefMap.getCanonicalPath());
-				compilerArgs.add("-AreobfSrgFile=" + this.project.file(this.project.getBuildDir().getName() + "/srgs/mcp-srg.srg").getCanonicalPath());
+				compilerArgs.add("-AreobfSrgFile=" + reobfSrg.getCanonicalPath());
 				compileJava.getOptions().setCompilerArgs(compilerArgs);
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
+
+			// Eclipse AP Integration
+			GrimoireEclipse.configureEclipse(this.extension, this.project, mixinSrg, mixinRefMap, reobfSrg);
 
 			// Make sure default .jar artifact will embed our glorious refmap we've been putting together
 			Jar jarTask = (Jar) this.project.getTasks().getByName("jar");
