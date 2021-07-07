@@ -51,6 +51,11 @@ public class ChadShenanigans extends ExtraShenanigans {
 		reobf.addExtraSrgFile(mixinSrg);
 	}
 
+	@Override
+	public void apIntegration() {
+		// NO-OP
+	}
+
 	// Custom Tasks
 
 	public static class CopySrgsTask extends Copy {

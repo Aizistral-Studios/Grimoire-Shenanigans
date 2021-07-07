@@ -17,6 +17,9 @@ import org.gradle.api.tasks.scala.ScalaCompile;
 
 import com.integral.grimoire.ExtraShenanigans;
 import com.integral.grimoire.GrimoireShenanigans;
+import com.integral.grimoire.ide.GrimoireEclipse;
+
+import net.minecraftforge.gradle.tasks.GenSrgs;
 import net.minecraftforge.gradle.user.patcherUser.forge.ForgePlugin;
 
 public class IncelShenanigans extends ExtraShenanigans {
@@ -49,6 +52,15 @@ public class IncelShenanigans extends ExtraShenanigans {
 	public void extraReobfMap(File mixinSrg) {
 		//TaskSingleReobf reobf = (TaskSingleReobf) this.project.getTasks().getByName("reobf");
 		//reobf.addSecondarySrgFile(mixinSrg);
+	}
+
+	@Override
+	public void apIntegration() {
+		this.project.afterEvaluate(project -> {
+			GenSrgs genSrgs =  (GenSrgs) this.project.getTasks().findByName("genSrgs");
+			File reobfSrg = genSrgs.getMcpToSrg();
+			GrimoireEclipse.configureEclipse(this.plugin.extension, this.project, null, null, reobfSrg);
+		});
 	}
 
 	@Override

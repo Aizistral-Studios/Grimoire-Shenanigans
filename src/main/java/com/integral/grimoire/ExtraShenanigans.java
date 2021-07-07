@@ -24,4 +24,6 @@ public abstract class ExtraShenanigans {
 
 	public abstract void addSourceReplacements();
 
+	public abstract void apIntegration();
+
 }

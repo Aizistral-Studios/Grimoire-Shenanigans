@@ -42,6 +42,7 @@ import com.integral.grimoire.tasks.ClearBuildTask;
 import com.integral.grimoire.tasks.ClearResourcesTask;
 
 import groovy.xml.MarkupBuilder;
+import net.minecraftforge.gradle.tasks.GenSrgs;
 
 public class GrimoireShenanigans implements Plugin<Project> {
 	public Project project;
@@ -233,6 +234,8 @@ public class GrimoireShenanigans implements Plugin<Project> {
 
 			// Why do we need this one again?..
 			this.extraShenanigans.extraReobfMap(mixinSrg);
+		} else {
+			this.extraShenanigans.apIntegration();
 		}
 
 		// Automatically replace any @MIXIN_REFMAP@ tokens in project resources
