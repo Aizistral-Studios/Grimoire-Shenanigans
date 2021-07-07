@@ -12,6 +12,7 @@ For an example of how this plugin can be used in project, check out following te
 - Automatically specifies [repository](https://github.com/juanmuscaria/maven) where Grimoire can be located, as well as proper artifacts to use at compile-time and runtime;
 - Adds tasks for clearing build cache and resource cache before constructing a jar. Needed to ensure proper file inflation/token replacement when building;
 - For Eclipse projects, adds an amount of access rules to `.classpath`, which help you to not accidentally stick your fingers into non-API parts of Grimoire;
+- Integrates Mixin annotation processor tests for Eclipse IDE;
 - Automatically replaces `@MIXIN_REFMAP@` when processing project resources and sources with actual refmap name as specified by `mixinRefmapName` property.
 
 ## Gradle Properties
