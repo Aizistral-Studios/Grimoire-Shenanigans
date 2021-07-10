@@ -5,12 +5,16 @@ import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.lang.reflect.Method;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.tools.ant.filters.ReplaceTokens;
 import org.gradle.api.Action;
@@ -18,6 +22,9 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.repositories.FlatDirectoryArtifactRepository;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.publish.PublishingExtension;
@@ -51,6 +58,8 @@ public class GrimoireShenanigans implements Plugin<Project> {
 	public Rule forbiddenRule;
 
 	protected boolean enabled = false;
+	protected String lastGrimoire = null;
+	protected boolean fetch = false;
 
 	@Override
 	@SuppressWarnings({"unchecked", "rawtypes"})
@@ -94,20 +103,18 @@ public class GrimoireShenanigans implements Plugin<Project> {
 
 		// Inform the user whether or not Grimoire shenanigans are enabled.
 		// Doing this after evaluate so that banner gets printed first
-		this.project.afterEvaluate(new Action() {
+		this.project.afterEvaluate(arg -> {
+			project.getLogger().lifecycle("Grimoire shenanigans " +
+					(this.areGrimoireShenanigansEnabled() ? "enabled" : "disabled"));
 
-			@Override
-			public void execute(Object arg) {
-				project.getLogger().lifecycle("Grimoire shenanigans " +
-						(GrimoireShenanigans.this.areGrimoireShenanigansEnabled() ? "enabled" : "disabled"));
-
-				if (GrimoireShenanigans.this.extraShenanigans.isChadMC())
-					if (GrimoireShenanigans.this.areGrimoireShenanigansEnabled()) {
-						project.getLogger().lifecycle("Using Mixin refmap name: " +
-								GrimoireShenanigans.this.getMixinRefmapName());
-					}
+			if (this.fetch) {
+				project.getLogger().lifecycle("Fetched latest Grimoire version: " + this.lastGrimoire);
 			}
 
+			if (this.areGrimoireShenanigansEnabled()) {
+				project.getLogger().lifecycle("Using Mixin refmap name: " +
+						this.getMixinRefmapName());
+			}
 		});
 	}
 
@@ -132,12 +139,20 @@ public class GrimoireShenanigans implements Plugin<Project> {
 
 		if (!this.isGrimoireItself()) {
 			if (!this.disableGrimoireDependency()) {
+				List<Dependency> depList = new ArrayList<>();
 				if (this.extraShenanigans.isChadMC()) {
-					this.project.getDependencies().add("compileOnly", "io.github.crucible.grimoire:Grimoire-mc1.7.10-api:" + this.grimoireVersion());
-					this.project.getDependencies().add("runtimeOnly", "io.github.crucible.grimoire:Grimoire-mc1.7.10-dev:" + this.grimoireVersion());
+					depList.add(this.project.getDependencies().add("compileOnly", "io.github.crucible.grimoire:Grimoire-mc1.7.10-api:" + this.grimoireVersion()));
+					depList.add(this.project.getDependencies().add("runtimeOnly", "io.github.crucible.grimoire:Grimoire-mc1.7.10-dev:" + this.grimoireVersion()));
 				} else {
-					this.project.getDependencies().add("compileOnly", "io.github.crucible.grimoire:Grimoire-mc1.12.2-api:" + this.grimoireVersion());
-					this.project.getDependencies().add("runtimeOnly", "io.github.crucible.grimoire:Grimoire-mc1.12.2-dev:" + this.grimoireVersion());
+					depList.add(this.project.getDependencies().add("compileOnly", "io.github.crucible.grimoire:Grimoire-mc1.12.2-api:" + this.grimoireVersion()));
+					depList.add(this.project.getDependencies().add("runtimeOnly", "io.github.crucible.grimoire:Grimoire-mc1.12.2-dev:" + this.grimoireVersion()));
+				}
+
+				for (Dependency dep : depList) {
+					if (dep instanceof ExternalModuleDependency) {
+						ExternalModuleDependency extDep = (ExternalModuleDependency) dep;
+						extDep.setChanging(true);
+					}
 				}
 			}
 
@@ -255,8 +270,52 @@ public class GrimoireShenanigans implements Plugin<Project> {
 		rules.add(new AccessRule(rule.getName(), pattern));
 	}
 
+	public String fetchLastGrimoireVersion() {
+		if (this.lastGrimoire != null)
+			return this.lastGrimoire;
+
+
+		String xmlData = null;
+		try {
+			URL url = new URL("https://raw.githubusercontent.com/juanmuscaria/maven/master/io/github/crucible/grimoire/Grimoire-mc1.7.10/maven-metadata.xml");
+			Scanner scanner = new Scanner(url.openStream());
+
+			while (scanner.hasNextLine()) {
+				if (xmlData == null) {
+					xmlData = scanner.nextLine();
+				} else {
+					xmlData += System.lineSeparator() + scanner.nextLine();
+				}
+			}
+
+			scanner.close();
+		} catch (Exception ex) {
+			// Ignore, might be no internet connection
+		}
+
+		if (xmlData != null) {
+			Pattern pattern = Pattern.compile(Pattern.quote("<latest>") + ".*" + Pattern.quote("</latest>"));
+			Matcher matcher = pattern.matcher(xmlData);
+
+			if (matcher.find()) {
+				String versionGroup = matcher.group();
+				Matcher versionMatcher = Pattern.compile(Pattern.quote(">") + ".*" + Pattern.quote("<")).matcher(versionGroup);
+
+				if (versionMatcher.find()) {
+					String version = versionMatcher.group();
+					version = version.substring(1, version.length()-1);
+					this.fetch = true;
+					return this.lastGrimoire = version;
+				}
+			}
+		}
+
+		return this.lastGrimoire = "[3.2.0,)";
+	}
+
 	public String grimoireVersion() {
-		return this.project.hasProperty("grimoireVersion") ? this.project.getProperties().get("grimoireVersion").toString() : "[3.2.0,)";
+		String last = this.fetchLastGrimoireVersion();
+		return this.project.hasProperty("grimoireVersion") ? this.project.getProperties().get("grimoireVersion").toString() : last;
 	}
 
 	public boolean areGrimoireShenanigansEnabled() {
