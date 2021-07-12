@@ -111,7 +111,7 @@ public class GrimoireShenanigans implements Plugin<Project> {
 				project.getLogger().lifecycle("Fetched latest Grimoire version: " + this.lastGrimoire);
 			}
 
-			if (this.areGrimoireShenanigansEnabled()) {
+			if (this.refmapEnabled()) {
 				project.getLogger().lifecycle("Using Mixin refmap name: " +
 						this.getMixinRefmapName());
 			}
@@ -135,7 +135,9 @@ public class GrimoireShenanigans implements Plugin<Project> {
 		}
 
 		// Add annotation processor for... annotation processing, I suppose
-		this.project.getDependencies().add("annotationProcessor", this.extraShenanigans.getAnnotationProccessor());
+		if (this.refmapEnabled()) {
+			this.project.getDependencies().add("annotationProcessor", this.extraShenanigans.getAnnotationProccessor());
+		}
 
 		if (!this.isGrimoireItself()) {
 			if (!this.disableGrimoireDependency()) {
@@ -191,79 +193,81 @@ public class GrimoireShenanigans implements Plugin<Project> {
 			});
 		}
 
-		if (this.extraShenanigans.isChadMC()) {
-			// Create directory and srg/refmap output files for Mixin annotation processor
-			File mixinBuild = new File(this.project.getBuildDir(), "mixins");
-			mixinBuild.mkdirs();
+		if (this.refmapEnabled()) {
+			if (this.extraShenanigans.isChadMC()) {
+				// Create directory and srg/refmap output files for Mixin annotation processor
+				File mixinBuild = new File(this.project.getBuildDir(), "mixins");
+				mixinBuild.mkdirs();
 
-			File mixinSrg = new File(mixinBuild, "mixins." + this.project.getName() + ".srg");
-			File mixinRefMap = new File(mixinBuild, this.getMixinRefmapName().replace("/", "$").replace(File.separator, "$"));
-			File reobfSrg = this.project.file(this.project.getBuildDir().getName() + "/srgs/mcp-srg.srg");
+				File mixinSrg = new File(mixinBuild, "mixins." + this.project.getName() + ".srg");
+				File mixinRefMap = new File(mixinBuild, this.getMixinRefmapName().replace("/", "$").replace(File.separator, "$"));
+				File reobfSrg = this.project.file(this.project.getBuildDir().getName() + "/srgs/mcp-srg.srg");
 
-			try {
-				if (!mixinSrg.exists()) {
-					mixinSrg.createNewFile();
+				try {
+					if (!mixinSrg.exists()) {
+						mixinSrg.createNewFile();
+					}
+
+					if (!mixinRefMap.exists()) {
+						mixinRefMap.createNewFile();
+					}
+				} catch (Exception ex) {
+					throw new RuntimeException(ex);
 				}
 
-				if (!mixinRefMap.exists()) {
-					mixinRefMap.createNewFile();
+				// We probably don't need this, but having it will allow to interact with these
+				// properties through buildscript. Probably. Why? Why not.
+				this.project.getExtensions().getExtraProperties().set("mixinSrg", mixinSrg);
+				this.project.getExtensions().getExtraProperties().set("mixinRefMap", mixinRefMap);
+
+				// Add compiler args to point annotation processor to its input/output files
+				try {
+					List<String> compilerArgs = compileJava.getOptions().getCompilerArgs();
+					compilerArgs.add("-Xlint:-processing");
+					compilerArgs.add("-AoutSrgFile=" + mixinSrg.getCanonicalPath());
+					compilerArgs.add("-AoutRefMapFile=" + mixinRefMap.getCanonicalPath());
+					compilerArgs.add("-AreobfSrgFile=" + reobfSrg.getCanonicalPath());
+					compileJava.getOptions().setCompilerArgs(compilerArgs);
+				} catch (Exception e) {
+					throw new RuntimeException(e);
 				}
-			} catch (Exception ex) {
-				throw new RuntimeException(ex);
+
+				// Eclipse AP Integration
+				GrimoireEclipse.configureEclipse(this.extension, this.project, mixinSrg, mixinRefMap, reobfSrg);
+
+				// Make sure default .jar artifact will embed our glorious refmap we've been putting together
+				Jar jarTask = (Jar) this.project.getTasks().getByName("jar");
+
+				jarTask.from(mixinRefMap, action -> {
+					String name = mixinRefMap.getName();
+					String destination = mixinRefMap.getName().replace("$", "/");
+
+					if (destination.contains("/")) {
+						destination = destination.substring(0, destination.lastIndexOf('/'));
+						action.into(destination).eachFile(copy -> {
+							copy.setName(name.substring(name.lastIndexOf('$')+1, name.length()));
+						});
+					}
+				});
+
+				// Why do we need this one again?..
+				this.extraShenanigans.extraReobfMap(mixinSrg);
+			} else {
+				this.extraShenanigans.apIntegration();
 			}
 
-			// We probably don't need this, but having it will allow to interact with these
-			// properties through buildscript. Probably. Why? Why not.
-			this.project.getExtensions().getExtraProperties().set("mixinSrg", mixinSrg);
-			this.project.getExtensions().getExtraProperties().set("mixinRefMap", mixinRefMap);
+			// Automatically replace any @MIXIN_REFMAP@ tokens in project resources
+			ProcessResources processResources = (ProcessResources) this.project.getTasks().getByName("processResources");
+			Map<String, Object> propertyMap = new LinkedHashMap<String, Object>();
+			Map<String, String> tokenMap = new LinkedHashMap<String, String>();
+			tokenMap.put("MIXIN_REFMAP", this.getMixinRefmapName());
+			propertyMap.put("tokens", tokenMap);
 
-			// Add compiler args to point annotation processor to its input/output files
-			try {
-				List<String> compilerArgs = compileJava.getOptions().getCompilerArgs();
-				compilerArgs.add("-Xlint:-processing");
-				compilerArgs.add("-AoutSrgFile=" + mixinSrg.getCanonicalPath());
-				compilerArgs.add("-AoutRefMapFile=" + mixinRefMap.getCanonicalPath());
-				compilerArgs.add("-AreobfSrgFile=" + reobfSrg.getCanonicalPath());
-				compileJava.getOptions().setCompilerArgs(compilerArgs);
-			} catch (Exception e) {
-				throw new RuntimeException(e);
-			}
+			processResources.filter(propertyMap, ReplaceTokens.class);
 
-			// Eclipse AP Integration
-			GrimoireEclipse.configureEclipse(this.extension, this.project, mixinSrg, mixinRefMap, reobfSrg);
-
-			// Make sure default .jar artifact will embed our glorious refmap we've been putting together
-			Jar jarTask = (Jar) this.project.getTasks().getByName("jar");
-
-			jarTask.from(mixinRefMap, action -> {
-				String name = mixinRefMap.getName();
-				String destination = mixinRefMap.getName().replace("$", "/");
-
-				if (destination.contains("/")) {
-					destination = destination.substring(0, destination.lastIndexOf('/'));
-					action.into(destination).eachFile(copy -> {
-						copy.setName(name.substring(name.lastIndexOf('$')+1, name.length()));
-					});
-				}
-			});
-
-			// Why do we need this one again?..
-			this.extraShenanigans.extraReobfMap(mixinSrg);
-		} else {
-			this.extraShenanigans.apIntegration();
+			// Also in project sources
+			this.extraShenanigans.addSourceReplacements();
 		}
-
-		// Automatically replace any @MIXIN_REFMAP@ tokens in project resources
-		ProcessResources processResources = (ProcessResources) this.project.getTasks().getByName("processResources");
-		Map<String, Object> propertyMap = new LinkedHashMap<String, Object>();
-		Map<String, String> tokenMap = new LinkedHashMap<String, String>();
-		tokenMap.put("MIXIN_REFMAP", this.getMixinRefmapName());
-		propertyMap.put("tokens", tokenMap);
-
-		processResources.filter(propertyMap, ReplaceTokens.class);
-
-		// Also in project sources
-		this.extraShenanigans.addSourceReplacements();
 	}
 
 	private void addRule(List<AccessRule> rules, Rule rule, String pattern) {
@@ -316,6 +320,13 @@ public class GrimoireShenanigans implements Plugin<Project> {
 	public String grimoireVersion() {
 		String last = this.fetchLastGrimoireVersion();
 		return this.project.hasProperty("grimoireVersion") ? this.project.getProperties().get("grimoireVersion").toString() : last;
+	}
+
+	public boolean refmapEnabled() {
+		if (this.project.hasProperty("disableMixinRefmap"))
+			return !Boolean.parseBoolean(String.valueOf(this.project.getProperties().get("disableMixinRefmap")));
+		else
+			return true;
 	}
 
 	public boolean areGrimoireShenanigansEnabled() {
