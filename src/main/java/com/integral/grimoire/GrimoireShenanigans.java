@@ -132,6 +132,13 @@ public class GrimoireShenanigans implements Plugin<Project> {
 		if (copyTask != null) {
 			copyTask.dependsOn("genSrgs");
 			compileJava.dependsOn(copyTask);
+
+			try {
+				Task eclipse = this.project.getTasks().getByName("eclipse");
+				eclipse.dependsOn(copyTask);
+			} catch (Throwable ex) {
+				// NO-OP
+			}
 		}
 
 		// Add annotation processor for... annotation processing, I suppose
