@@ -65,7 +65,7 @@ public class IncelShenanigans extends ExtraShenanigans {
 
 	@Override
 	public String getAnnotationProccessor() {
-		return "org.spongepowered:mixin:0.8.1-SNAPSHOT:processor";
+		return "org.spongepowered:mixin:0.8.3-SNAPSHOT:processor";
 	}
 
 	@Override

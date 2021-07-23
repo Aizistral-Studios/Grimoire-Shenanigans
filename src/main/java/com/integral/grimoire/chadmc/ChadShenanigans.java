@@ -78,7 +78,7 @@ public class ChadShenanigans extends ExtraShenanigans {
 
 	@Override
 	public String getAnnotationProccessor() {
-		return "org.spongepowered:mixin:0.7.11-SNAPSHOT";
+		return "org.spongepowered:mixin:0.8.3-SNAPSHOT:processor";
 	}
 
 	@Override
