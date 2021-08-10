@@ -270,7 +270,18 @@ public class GrimoireShenanigans implements Plugin<Project> {
 			tokenMap.put("MIXIN_REFMAP", this.getMixinRefmapName());
 			propertyMap.put("tokens", tokenMap);
 
-			processResources.filter(propertyMap, ReplaceTokens.class);
+			processResources.eachFile(file -> {
+				String name = file.getName();
+
+				if (name != null) {
+					if (name.endsWith(".json") || name.endsWith(".txt") || name.endsWith(".info") ||
+							name.endsWith(".cfg") || name.endsWith(".toml") || name.endsWith(".yml") ||
+							name.endsWith(".java") || name.endsWith(".kts") || name.endsWith(".gradle")) {
+
+						file.filter(propertyMap, ReplaceTokens.class);
+					}
+				}
+			});
 
 			// Also in project sources
 			this.extraShenanigans.addSourceReplacements();

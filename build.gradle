@@ -9,7 +9,7 @@ apply plugin: "maven"
 apply plugin: 'maven-publish'
 
 group = 'com.integral.grimoire'
-version = '1.5.2'
+version = '1.5.3'
 archivesBaseName = 'GrimoireShenanigans'
 
 targetCompatibility = sourceCompatibility = '1.8'
