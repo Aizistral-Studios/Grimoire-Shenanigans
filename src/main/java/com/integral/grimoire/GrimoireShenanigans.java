@@ -115,6 +115,33 @@ public class GrimoireShenanigans implements Plugin<Project> {
 				project.getLogger().lifecycle("Using Mixin refmap name: " +
 						this.getMixinRefmapName());
 			}
+
+			if (this.getForcedMixinMappings() != null) {
+				File file = project.file(this.getForcedMixinMappings());
+				if (file.exists()) {
+					project.getLogger().lifecycle("Forced MCP -> SRG mappings defined as: " + this.getCanonicalPath(file));
+					JavaCompile compileJava = (JavaCompile) this.project.getTasks().getByName("compileJava");
+
+					List<String> args = compileJava.getOptions().getCompilerArgs();
+					String originalMap = null;
+
+					for (String carg: args) {
+						if (carg.startsWith("-AreobfSrgFile=")) {
+							originalMap = carg;
+						}
+					}
+
+					if (originalMap != null) {
+						project.getLogger().lifecycle("Default Mixin maps were expected at " + originalMap.replace("-AoutSrgFile=", "") + ", replacing.");
+						args.remove(originalMap);
+						args.add("-AreobfSrgFile=" + this.getCanonicalPath(file));
+						compileJava.getOptions().setCompilerArgs(args);
+					} else {
+						project.getLogger().lifecycle("Default Mixin maps were not specified, adding.");
+					}
+				} else
+					throw new IllegalArgumentException("Specified file does not exist: " + this.getCanonicalPath(file));
+			}
 		});
 	}
 
@@ -389,6 +416,13 @@ public class GrimoireShenanigans implements Plugin<Project> {
 			return this.project.getName() + ".refmap.json";
 	}
 
+	public String getForcedMixinMappings() {
+		if (this.project.hasProperty("forcedMixinMappings"))
+			return String.valueOf(this.project.getProperties().get("forcedMixinMappings"));
+		else
+			return null;
+	}
+
 	public void applyExternalPlugin(String plugin) {
 		HashMap<String, Object> map = new HashMap<String, Object>();
 		map.put("plugin", plugin);
@@ -401,6 +435,14 @@ public class GrimoireShenanigans implements Plugin<Project> {
 
 	public <T extends Task> T makeTask(String name, Class<T> type) {
 		return makeTask(this.project, name, type);
+	}
+
+	private String getCanonicalPath(File file) {
+		try {
+			return file.getCanonicalPath();
+		} catch (Throwable ex) {
+			throw new IllegalStateException("Could not get canonical path lol");
+		}
 	}
 
 	public MavenArtifactRepository addMavenRepo(Project proj, final String name, final String url) {
