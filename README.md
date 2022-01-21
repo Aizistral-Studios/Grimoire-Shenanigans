@@ -3,8 +3,8 @@ Gradle plugin that simplifies workspace setup for Grimoire implementers. Works i
 
 ## Workspace Setup:
 For an example of how this plugin can be used in project, check out following templates.
-- For 1.7.10: https://github.com/CrucibleMC/ForgeWorkspaceSetup/tree/1.7.10-grimmix
-- For 1.12.2: https://github.com/CrucibleMC/ForgeWorkspaceSetup/tree/1.12.2-grimmix
+- For 1.7.10: https://github.com/Aizistral-Studios/ForgeWorkspaceSetup/tree/1.7.10-grimmix
+- For 1.12.2: https://github.com/Aizistral-Studios/ForgeWorkspaceSetup/tree/1.12.2-grimmix
 
 ## Features:
 - Compatible with both 1.7.10 and 1.12.2 toolchain;
